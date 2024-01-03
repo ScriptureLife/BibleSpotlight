@@ -1,10 +1,46 @@
 use rusqlite::{params, Connection, Result};
 
+use std::fs;
+use std::path::PathBuf;
+use std::process::exit;
+use dirs;
 use crate::BibleReference;
 
 
-pub fn main(bible_reference: Option<BibleReference>) -> Result<String, rusqlite::Error> {
-    let conn = Connection::open("bible-versions/KJV+.SQLite3")?;
+fn find_version(version: &str) -> Option<String> {
+    let home_dir = dirs::home_dir().unwrap_or_else(|| PathBuf::from(""));
+    let dir = home_dir.join(".config/bible-spotlight/bibles");
+
+    if let Ok(entries) = fs::read_dir(dir) {
+        for entry in entries {
+            if let Ok(entry) = entry {
+                if let Some(file_name) = entry.file_name().to_str() {
+                    if file_name.contains(version) {
+                        return Some(entry.path().to_str().unwrap().to_string());
+                    }
+                }
+            }
+        }
+    }
+    None
+}
+
+pub fn main(bible_reference: Option<BibleReference>, version: &str) -> Result<String, rusqlite::Error> {
+    
+    let conn: Connection;
+
+
+    let path_version = find_version(version);
+    if path_version.is_some() {
+        conn = Connection::open(path_version.unwrap())?;
+    } else {
+
+        eprintln!("Could not find version: \"{}\"", version);
+        exit(1)
+        
+    }
+
+
 
     let fetch_book = format!("SELECT book_number FROM books WHERE long_name LIKE \"{}\"", bible_reference.as_ref().unwrap().book.trim_end());
     // println!("{:?}", &fetch_book);

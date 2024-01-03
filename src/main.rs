@@ -42,7 +42,15 @@ fn main() {
         let bible_ref: String = args[1].clone();
         let parsed_bible_ref = interpreter::parse(bible_ref.clone());
 
-        match fetch_verse(parsed_bible_ref) {
+
+        let version: &str;
+        if args.len() > 2 {
+            version = args[2].as_str();
+        } else {
+            version = "KJV";
+        }
+        
+        match fetch_verse(parsed_bible_ref, version) {
             Ok(verse) => match style_xml(&verse) {Ok(parsed_verse) => println!("{}", parsed_verse), Err(e) => eprintln!("Error parsing verse XML: {}", e),},
             Err(e) => eprintln!("Error fetching verse: {}", e),
         }
